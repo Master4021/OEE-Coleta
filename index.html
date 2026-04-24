@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="OEE Coleta"/>
+<meta name="theme-color" content="#0f6e56"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<title>OEE Coleta</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0efe9;--border:#e0ddd4;
+  --text:#1a1a18;--text2:#6b6a64;--text3:#9e9d96;
+  --green:#0f6e56;--green-bg:#e1f5ee;--green-text:#085041;
+  --blue:#185fa5;--blue-bg:#e6f1fb;--blue-text:#0c447c;
+  --amber:#ba7517;--amber-bg:#faeeda;--amber-text:#633806;
+  --red:#a32d2d;--red-bg:#fcebeb;--red-text:#501313;
+  --radius:10px;--radius-sm:7px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'SF Mono','Fira Code','Courier New',monospace;
+}
+.dark{
+  --bg:#141412;--surface:#1e1e1b;--surface2:#272724;--border:#333330;
+  --text:#f0efe8;--text2:#9e9d96;--text3:#6b6a64;
+  --green:#1d9e75;--green-bg:#04342c;--green-text:#9fe1cb;
+  --blue:#378add;--blue-bg:#042c53;--blue-text:#b5d4f4;
+  --amber:#ef9f27;--amber-bg:#412402;--amber-text:#fac775;
+  --red:#e24b4a;--red-bg:#501313;--red-text:#f7c1c1;
+}
+html,body{height:100%;background:var(--bg);font-family:var(--font);transition:background .2s;}
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.screen.active{display:flex;}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;background:var(--surface);border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.topbar-title{flex:1;font-size:16px;font-weight:500;color:var(--text);}
+.icon-btn{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:15px;cursor:pointer;color:var(--text);line-height:1;}
+input[type=date]{font-size:13px;padding:6px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);}
+
+.progress-strip{height:3px;background:var(--surface2);flex-shrink:0;}
+.progress-fill{height:100%;background:var(--green);transition:width .3s;}
+
+.stats-bar{display:flex;background:var(--surface);border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.stat-item{flex:1;padding:10px 12px;text-align:center;border-right:0.5px solid var(--border);}
+.stat-item:last-child{border-right:none;}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+.stat-val{font-size:17px;font-weight:500;color:var(--text);}
+
+.list-scroll{flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch;}
+.list-section-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:0 4px;margin:0 0 8px;}
+.machine-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.machine-card.done{border-color:var(--green);}
+.machine-id{font-family:var(--font-mono);font-size:15px;font-weight:500;color:var(--text);min-width:60px;}
+.machine-preview{flex:1;display:flex;gap:6px;flex-wrap:wrap;}
+.preview-chip{font-size:11px;padding:3px 8px;border-radius:20px;}
+.chip-t1{background:var(--blue-bg);color:var(--blue-text);}
+.chip-t2{background:var(--amber-bg);color:var(--amber-text);}
+.chip-empty{background:var(--surface2);color:var(--text3);}
+.done-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.empty-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+.add-machine-btn{background:var(--surface);border:0.5px dashed var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--text3);font-size:14px;width:100%;font-family:var(--font);}
+
+.detail-topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:0.5px solid var(--border);flex-shrink:0;}
+.back-btn{background:none;border:none;font-size:26px;cursor:pointer;color:var(--text);padding:0 4px;line-height:1;}
+.machine-title{font-size:18px;font-weight:500;font-family:var(--font-mono);color:var(--text);flex:1;}
+.delete-machine-btn{background:var(--red-bg);border:none;border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--red-text);cursor:pointer;font-family:var(--font);}
+.detail-scroll{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch;}
+
+.turno-block{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
+.turno-head{padding:10px 14px;display:flex;align-items:center;gap:8px;}
+.turno-badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
+.t1-badge{background:var(--blue-bg);color:var(--blue-text);}
+.t2-badge{background:var(--amber-bg);color:var(--amber-text);}
+.turno-ops{font-size:12px;color:var(--text3);margin-left:auto;}
+.format-note{font-size:11px;color:var(--text3);background:var(--surface2);border-radius:var(--radius-sm);padding:8px 12px;margin:0 14px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.format-note span{font-family:var(--font-mono);color:var(--green-text);background:var(--green-bg);padding:1px 6px;border-radius:4px;font-size:11px;}
+.op-row{padding:0 14px 10px;display:flex;align-items:center;gap:8px;}
+.op-row label{font-size:12px;color:var(--text3);min-width:60px;}
+.op-row input{flex:1;font-size:14px;padding:8px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);}
+.op-row input:focus{outline:none;border-color:var(--blue);background:var(--surface);}
+.op-row input.has-val{background:var(--green-bg);border-color:var(--green);color:var(--green-text);}
+.orders-area{padding:0 14px 10px;}
+.col-hint{font-size:10px;color:var(--text3);margin-bottom:6px;display:grid;grid-template-columns:1fr 80px 36px;gap:8px;}
+.order-row{display:grid;grid-template-columns:1fr 80px 36px;gap:8px;align-items:start;margin-bottom:10px;}
+.order-row input{font-size:14px;padding:8px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface2);color:var(--text);width:100%;font-family:var(--font);}
+.order-row input:focus{outline:none;border-color:var(--blue);background:var(--surface);}
+.order-row input.has-val{background:var(--green-bg);border-color:var(--green);color:var(--green-text);}
+.order-row input.invalid{border-color:var(--red);background:var(--red-bg);color:var(--red-text);}
+.wo-preview{font-size:10px;color:var(--text3);margin-top:3px;font-family:var(--font-mono);padding-left:2px;min-height:14px;}
+.wo-preview.valid{color:var(--green-text);}
+.del-btn{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:16px;cursor:pointer;color:var(--text3);height:38px;width:36px;flex-shrink:0;}
+.add-order-btn{width:100%;font-size:13px;padding:9px;border-radius:var(--radius-sm);border:0.5px dashed var(--border);background:none;cursor:pointer;color:var(--text3);margin-top:2px;font-family:var(--font);}
+
+.export-bar{padding:12px 16px;background:var(--surface);border-top:0.5px solid var(--border);flex-shrink:0;}
+.export-btn{width:100%;background:var(--green);border:none;padding:14px;border-radius:var(--radius);font-size:15px;font-weight:500;color:#e1f5ee;cursor:pointer;font-family:var(--font);}
+.export-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* save indicator */
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-left:6px;opacity:0;transition:opacity .3s;}
+.save-dot.show{opacity:1;}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;z-index:100;}
+.modal{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:20px 16px 40px;width:100%;}
+.modal h3{font-size:16px;font-weight:500;color:var(--text);margin-bottom:16px;}
+.modal input{width:100%;font-size:15px;padding:10px 12px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--surface2);color:var(--text);margin-bottom:8px;font-family:var(--font);}
+.modal input:focus{outline:none;border-color:var(--blue);}
+.modal-hint{font-size:12px;margin-bottom:12px;min-height:16px;}
+.modal-btns{display:flex;gap:8px;}
+.modal-btns button{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);}
+.btn-cancel{background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);}
+.btn-confirm{background:var(--green);border:none;color:#e1f5ee;}
+.btn-confirm:disabled{opacity:.4;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#085041;color:#e1f5ee;padding:10px 20px;border-radius:var(--radius);font-size:13px;display:none;z-index:200;white-space:nowrap;font-family:var(--font);}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="screen active" id="screen-list">
+    <div class="topbar">
+      <div class="topbar-title">OEE Coleta <span class="save-dot" id="save-dot"></span></div>
+      <input type="date" id="data-input"/>
+      <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">☀</button>
+    </div>
+    <div class="progress-strip"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-lbl">Concluídas</div><div class="stat-val" id="stat-done">0</div></div>
+      <div class="stat-item"><div class="stat-lbl">Pendentes</div><div class="stat-val" id="stat-pend">0</div></div>
+      <div class="stat-item"><div class="stat-lbl">Caixas</div><div class="stat-val" id="stat-boxes">0</div></div>
+    </div>
+    <div class="list-scroll" id="machine-list"></div>
+    <div class="export-bar">
+      <button class="export-btn" id="btn-export" onclick="exportFile()" disabled>Exportar Excel</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-detail">
+    <div class="detail-topbar">
+      <button class="back-btn" onclick="goBack()">‹</button>
+      <div class="machine-title" id="detail-title">M_220</div>
+      <button class="delete-machine-btn" onclick="confirmDeleteMachine()">Remover</button>
+    </div>
+    <div class="detail-scroll" id="detail-body"></div>
+  </div>
+
+  <div class="modal-bg" id="modal-add" style="display:none;">
+    <div class="modal">
+      <h3>Adicionar máquina</h3>
+      <input type="text" id="new-machine-input" placeholder="Ex: M_305" oninput="validateNewMachine(this)"/>
+      <div id="new-machine-hint" class="modal-hint"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-confirm" id="btn-add-confirm" onclick="addMachine()" disabled>Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const WO_FORMAT = '"26/00"0000"/ODP"';
+const STORAGE_KEY = 'oee_state_v1';
+
+let machines = ['M_220','M_214','M_217','M_179','M_159','M_212','M_173','M_149','M_178','M_170','M_172','M_069','M_176','M_188','M_192','M_105','M_108','M_138','M_008','M_002'];
+let db = {};
+let currentMachine = null;
+let isDark = false;
+let saveTimer = null;
+
+// ── persistence ──────────────────────────────────────────
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      machines, db,
+      date: document.getElementById('data-input').value,
+      isDark
+    }));
+    const dot = document.getElementById('save-dot');
+    dot.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => dot.classList.remove('show'), 1200);
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    machines = s.machines || machines;
+    db = s.db || {};
+    if (s.date) document.getElementById('data-input').value = s.date;
+    if (s.isDark) { isDark = true; document.getElementById('app').classList.add('dark'); document.getElementById('theme-btn').textContent = '☽'; }
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── helpers ───────────────────────────────────────────────
+function woPreview(val) {
+  const n = parseInt(val);
+  if (!val || isNaN(n) || n <= 0) return '';
+  return '26/00' + String(n).padStart(4,'0') + '/ODP';
+}
+
+function getM(m) {
+  if (!db[m]) db[m] = { t1:[{wo:'',cx:''}], t2:[{wo:'',cx:''}], op1:'', op2:'' };
+  return db[m];
+}
+
+function hasData(m, t) {
+  const d = db[m]; if (!d) return false;
+  const orders = t===1 ? d.t1 : d.t2, op = t===1 ? d.op1 : d.op2;
+  return !!op || orders.some(o => o.wo || o.cx);
+}
+
+function machineIsDone(m) { return hasData(m,1) || hasData(m,2); }
+
+// ── list screen ───────────────────────────────────────────
+function renderList() {
+  const el = document.getElementById('machine-list');
+  const rows = machines.map(m => {
+    const done = machineIsDone(m);
+    const d = db[m];
+    let chips = '';
+    if (d && hasData(m,1)) { const n=d.t1.filter(o=>o.wo||o.cx).length; chips+=`<span class="preview-chip chip-t1">T1 · ${n} ordem${n>1?'s':''}</span>`; }
+    else chips += '<span class="preview-chip chip-empty">T1 vazio</span>';
+    if (d && hasData(m,2)) { const n=d.t2.filter(o=>o.wo||o.cx).length; chips+=`<span class="preview-chip chip-t2">T2 · ${n} ordem${n>1?'s':''}</span>`; }
+    else chips += '<span class="preview-chip chip-empty">T2 vazio</span>';
+    return `<div class="machine-card${done?' done':''}" onclick="openMachine('${m}')">
+      <div class="machine-id">${m}</div>
+      <div class="machine-preview">${chips}</div>
+      <div class="${done?'done-dot':'empty-dot'}"></div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="list-section-label" style="margin-top:4px;">${machines.length} máquinas</div>
+    ${rows}
+    <button class="add-machine-btn" onclick="openModal()">
+      <span style="font-size:20px;line-height:1;">+</span> Adicionar máquina
+    </button>
+    <div style="height:8px;"></div>`;
+  updateStats();
+}
+
+function updateStats() {
+  let done=0, boxes=0;
+  machines.forEach(m => {
+    if (machineIsDone(m)) done++;
+    const d = db[m]; if (d) [...d.t1,...d.t2].forEach(o => { if(o.cx) boxes += parseInt(o.cx)||0; });
+  });
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pend').textContent = machines.length - done;
+  document.getElementById('stat-boxes').textContent = boxes.toLocaleString('pt-BR');
+  document.getElementById('progress').style.width = machines.length ? Math.round(done/machines.length*100)+'%' : '0%';
+  document.getElementById('btn-export').disabled = done === 0;
+}
+
+// ── detail screen ─────────────────────────────────────────
+function openMachine(m) {
+  currentMachine = m;
+  document.getElementById('detail-title').textContent = m;
+  renderDetail();
+  document.getElementById('screen-list').classList.remove('active');
+  document.getElementById('screen-detail').classList.add('active');
+}
+
+function goBack() {
+  document.getElementById('screen-detail').classList.remove('active');
+  document.getElementById('screen-list').classList.add('active');
+  renderList();
+}
+
+function renderDetail() {
+  const d = getM(currentMachine);
+  document.getElementById('detail-body').innerHTML =
+    renderTurnoBlock(1, d) + renderTurnoBlock(2, d) + '<div style="height:16px;"></div>';
+}
+
+function renderTurnoBlock(t, d) {
+  const orders = t===1 ? d.t1 : d.t2;
+  const op = t===1 ? d.op1 : d.op2;
+  const total = orders.reduce((s,o) => s+(parseInt(o.cx)||0), 0);
+  const rows = orders.map((o,i) => {
+    const preview = woPreview(o.wo);
+    return `<div>
+      <div class="order-row">
+        <input type="text" inputmode="numeric" placeholder="Nº da ordem" value="${o.wo}"
+          oninput="saveOrd(${t},${i},'wo',this)"
+          class="${o.wo ? (preview?'has-val':'invalid') : ''}"/>
+        <input type="number" inputmode="numeric" placeholder="Caixas" value="${o.cx}"
+          oninput="saveOrd(${t},${i},'cx',this)" min="0"
+          class="${o.cx?'has-val':''}"/>
+        <button class="del-btn" onclick="delOrd(${t},${i})" ${orders.length===1?'style="opacity:.2;pointer-events:none;"':''}>✕</button>
+      </div>
+      <div class="wo-preview${preview?' valid':''}" id="wo-prev-${t}-${i}">${preview}</div>
+    </div>`;
+  }).join('');
+  return `<div class="turno-block">
+    <div class="turno-head">
+      <span class="turno-badge ${t===1?'t1-badge':'t2-badge'}">${t===1?'T1 — 06:00':'T2 — 18:00'}</span>
+      ${total>0?`<span class="turno-ops">${total} cx total</span>`:''}
+    </div>
+    <div class="format-note">Ordem: <span>26/00XXXX/ODP</span> — digite só o número</div>
+    <div class="op-row">
+      <label>Operador</label>
+      <input type="text" placeholder="Nome do operador" value="${op}" oninput="saveOp(${t},this)" class="${op?'has-val':''}"/>
+    </div>
+    <div class="orders-area">
+      <div class="col-hint"><span>Nº ordem</span><span>Caixas</span><span></span></div>
+      ${rows}
+      <button class="add-order-btn" onclick="addOrd(${t})">+ adicionar ordem</button>
+    </div>
+  </div>`;
+}
+
+function saveOrd(t,i,f,el) {
+  const d = getM(currentMachine);
+  const orders = t===1 ? d.t1 : d.t2;
+  orders[i][f] = el.value;
+  el.classList.remove('has-val','invalid');
+  if (f === 'wo') {
+    const preview = woPreview(el.value);
+    const prevEl = document.getElementById(`wo-prev-${t}-${i}`);
+    if (el.value) {
+      if (preview) { el.classList.add('has-val'); if(prevEl){prevEl.textContent=preview;prevEl.className='wo-preview valid';} }
+      else { el.classList.add('invalid'); if(prevEl){prevEl.textContent='número inválido';prevEl.className='wo-preview';} }
+    } else { if(prevEl){prevEl.textContent='';prevEl.className='wo-preview';} }
+  } else { if (el.value) el.classList.add('has-val'); }
+  refreshTurnoHead(t, d);
+  saveState();
+}
+
+function saveOp(t, el) {
+  const d = getM(currentMachine);
+  if (t===1) d.op1 = el.value; else d.op2 = el.value;
+  el.classList.toggle('has-val', !!el.value);
+  saveState();
+}
+
+function addOrd(t) {
+  const d = getM(currentMachine);
+  if (t===1) d.t1.push({wo:'',cx:''}); else d.t2.push({wo:'',cx:''});
+  renderDetail(); saveState();
+}
+
+function delOrd(t,i) {
+  const d = getM(currentMachine);
+  const orders = t===1 ? d.t1 : d.t2;
+  if (orders.length === 1) return;
+  orders.splice(i,1);
+  renderDetail(); saveState();
+}
+
+function refreshTurnoHead(t, d) {
+  const orders = t===1 ? d.t1 : d.t2;
+  const total = orders.reduce((s,o) => s+(parseInt(o.cx)||0), 0);
+  const heads = document.querySelectorAll('.turno-head');
+  if (heads[t-1]) {
+    let span = heads[t-1].querySelector('.turno-ops');
+    if (total > 0) {
+      if (!span) { span=document.createElement('span'); span.className='turno-ops'; heads[t-1].appendChild(span); }
+      span.textContent = `${total} cx total`;
+    } else if (span) span.textContent = '';
+  }
+}
+
+function confirmDeleteMachine() {
+  if (machines.length <= 1) { alert('Precisa ter pelo menos 1 máquina.'); return; }
+  if (confirm(`Remover ${currentMachine} permanentemente?`)) {
+    machines = machines.filter(m => m !== currentMachine);
+    delete db[currentMachine];
+    goBack(); saveState();
+  }
+}
+
+function openModal() {
+  document.getElementById('modal-add').style.display = 'flex';
+  document.getElementById('new-machine-input').value = '';
+  document.getElementById('new-machine-hint').textContent = '';
+  document.getElementById('btn-add-confirm').disabled = true;
+  setTimeout(() => document.getElementById('new-machine-input').focus(), 100);
+}
+function closeModal() { document.getElementById('modal-add').style.display = 'none'; }
+
+function validateNewMachine(el) {
+  const v = el.value.trim().toUpperCase();
+  const hint = document.getElementById('new-machine-hint');
+  const btn = document.getElementById('btn-add-confirm');
+  if (!v) { hint.textContent=''; btn.disabled=true; return; }
+  if (machines.includes(v)) { hint.textContent='Essa máquina já existe.'; hint.style.color='var(--red)'; btn.disabled=true; return; }
+  hint.textContent='ID disponível'; hint.style.color='var(--green)'; btn.disabled=false;
+}
+
+function addMachine() {
+  const v = document.getElementById('new-machine-input').value.trim().toUpperCase();
+  if (!v || machines.includes(v)) return;
+  machines.push(v);
+  closeModal(); renderList(); saveState();
+  setTimeout(() => openMachine(v), 100);
+}
+
+function toggleTheme() {
+  isDark = !isDark;
+  document.getElementById('app').classList.toggle('dark', isDark);
+  document.getElementById('theme-btn').textContent = isDark ? '☽' : '☀';
+  saveState();
+}
+
+document.getElementById('data-input').addEventListener('change', saveState);
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+function exportFile() {
+  const dateVal = document.getElementById('data-input').value;
+  const [y,mo,d] = dateVal.split('-');
+  const wb = XLSX.utils.book_new();
+  const wsData = [['INIZIO','RESOURCE_ID','WORKORDER_BASE_ID','CAIXAS','Employee']];
+  machines.forEach(m => {
+    [1,2].forEach(t => {
+      const hour = t===1 ? '06.00.00' : '18.00.00';
+      const inizio = `${d}/${mo}/${y} ${hour}`;
+      const dd = db[m];
+      if (!dd) { wsData.push([inizio, m, '', '', '']); return; }
+      const orders = t===1 ? dd.t1 : dd.t2;
+      const op = t===1 ? dd.op1 : dd.op2;
+      orders.forEach(o => {
+        wsData.push([inizio, m, o.wo?parseInt(o.wo):'', o.cx?parseFloat(o.cx):'', op||'']);
+      });
+    });
+  });
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R=1; R<=range.e.r; R++) {
+    const woCell = ws[XLSX.utils.encode_cell({r:R,c:2})];
+    if (woCell && woCell.v !== '') { woCell.t='n'; woCell.z=WO_FORMAT; }
+    const cxCell = ws[XLSX.utils.encode_cell({r:R,c:3})];
+    if (cxCell && cxCell.v !== '') { cxCell.t='n'; cxCell.z='0.00'; }
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'OEE');
+  XLSX.writeFile(wb, `OEE_${y}${mo}${d}.xlsx`);
+  showToast('Arquivo exportado');
+}
+
+// ── init ──────────────────────────────────────────────────
+if (!loadState()) {
+  const today = new Date();
+  document.getElementById('data-input').value = today.toISOString().split('T')[0];
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+renderList();
+</script>
+</body>
+</html>
