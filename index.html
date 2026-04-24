@@ -7,7 +7,479 @@
   <link rel="manifest" href="manifest.json">
   <style>
     :root {
-      --bg-base: #f8f9fa;
+      --bg-base: #f8f9fa;<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="OEE Coleta"/>
+<meta name="theme-color" content="#1a6fd4"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<title>OEE Coleta</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f2f3f5;
+  --surface:#ffffff;
+  --surface2:#f2f3f5;
+  --border:#dde0e6;
+  --border2:#c8ccd5;
+  --text:#111318;
+  --text2:#4a4f5c;
+  --text3:#8a909f;
+  --accent:#1a6fd4;
+  --accent-hover:#155bb0;
+  --accent-light:#e8f0fc;
+  --accent-text:#1a6fd4;
+  --success:#1a9e5c;
+  --success-bg:#e6f7ef;
+  --success-text:#14794a;
+  --warning:#c97a00;
+  --warning-bg:#fff4e0;
+  --warning-text:#9a5e00;
+  --danger:#c0392b;
+  --danger-bg:#fdecea;
+  --danger-text:#9b2c20;
+  --radius:12px;
+  --radius-sm:8px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'SF Mono','Fira Code','Courier New',monospace;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+}
+html,body{height:100%;background:var(--bg);font-family:var(--font);}
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.screen.active{display:flex;}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.topbar-title{flex:1;font-size:17px;font-weight:600;color:var(--text);}
+input[type=date]{font-size:13px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);}
+
+.accent-bar{height:3px;background:var(--accent);flex-shrink:0;}
+
+.progress-wrap{padding:10px 16px 4px;background:var(--surface);flex-shrink:0;}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:5px;}
+.progress-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
+
+.stats-bar{display:flex;padding:10px 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;}
+.stat-card{flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;border:1px solid var(--border);}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.stat-val{font-size:20px;font-weight:600;color:var(--text);}
+.stat-val.accent{color:var(--accent);}
+
+.list-scroll{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch;background:var(--bg);}
+.section-lbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding:0 2px;}
+
+.machine-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:var(--shadow);-webkit-tap-highlight-color:transparent;}
+.machine-card:active{background:var(--surface2);}
+.machine-card.done{border-left:3px solid var(--accent);}
+.machine-id{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--text);min-width:58px;}
+.machine-preview{flex:1;display:flex;gap:5px;flex-wrap:wrap;}
+.chip{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
+.chip-t1{background:var(--accent-light);color:var(--accent-text);}
+.chip-t2{background:var(--warning-bg);color:var(--warning-text);}
+.chip-empty{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.done-icon{font-size:16px;color:var(--accent);flex-shrink:0;}
+.empty-circle{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;}
+
+.add-machine-btn{background:var(--surface);border:1.5px dashed var(--border2);border-radius:var(--radius);padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--accent);font-size:14px;font-weight:500;width:100%;font-family:var(--font);}
+.add-machine-btn:active{background:var(--accent-light);}
+
+.export-bar{padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;}
+.export-btn{width:100%;background:var(--accent);border:none;padding:15px;border-radius:var(--radius);font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:var(--font);box-shadow:0 2px 8px rgba(26,109,212,.3);}
+.export-btn:active{background:var(--accent-hover);}
+.export-btn:disabled{background:var(--border2);box-shadow:none;color:var(--text3);cursor:not-allowed;}
+
+.detail-topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.back-btn{background:none;border:none;font-size:28px;cursor:pointer;color:var(--accent);padding:0 4px;line-height:1;font-weight:300;}
+.machine-title{font-size:18px;font-weight:700;font-family:var(--font-mono);color:var(--text);flex:1;}
+.remove-btn{background:var(--danger-bg);border:none;border-radius:var(--radius-sm);padding:7px 11px;font-size:13px;color:var(--danger-text);cursor:pointer;font-family:var(--font);font-weight:500;}
+.detail-scroll{flex:1;overflow-y:auto;padding:14px 16px;background:var(--bg);-webkit-overflow-scrolling:touch;}
+
+.turno-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.turno-head{padding:11px 14px;display:flex;align-items:center;gap:8px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.turno-badge{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;letter-spacing:.2px;}
+.tb1{background:var(--accent);color:#fff;}
+.tb2{background:var(--warning-bg);color:var(--warning-text);border:1px solid #f0d090;}
+.turno-cx{font-size:12px;color:var(--accent);margin-left:auto;font-weight:600;}
+
+.format-note{margin:10px 14px 0;padding:7px 11px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:11px;color:var(--accent-text);display:flex;align-items:center;gap:6px;}
+.format-note code{font-family:var(--font-mono);font-weight:600;}
+
+.op-row{padding:12px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.op-lbl{font-size:12px;color:var(--text3);font-weight:500;min-width:62px;}
+.op-row input{flex:1;font-size:14px;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);}
+.op-row input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(26,109,212,.12);}
+.op-row input.has-val{border-color:var(--accent);}
+
+.orders-area{padding:10px 14px 12px;}
+.col-hint{font-size:10px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:grid;grid-template-columns:1fr 84px 36px;gap:8px;}
+.order-row{display:grid;grid-template-columns:1fr 84px 36px;gap:8px;align-items:start;margin-bottom:10px;}
+.order-row input{font-size:14px;padding:9px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);width:100%;font-family:var(--font);}
+.order-row input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(26,109,212,.12);}
+.order-row input.has-val{border-color:var(--accent);background:var(--accent-light);}
+.order-row input.invalid{border-color:var(--danger);background:var(--danger-bg);color:var(--danger-text);}
+.wo-preview{font-size:10px;color:var(--text3);margin-top:3px;font-family:var(--font-mono);padding-left:2px;min-height:14px;}
+.wo-preview.valid{color:var(--accent);font-weight:500;}
+.del-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;cursor:pointer;color:var(--text3);height:40px;width:36px;flex-shrink:0;}
+.del-btn:active{background:var(--danger-bg);color:var(--danger-text);border-color:var(--danger);}
+.add-order-btn{width:100%;font-size:13px;padding:9px;border-radius:var(--radius-sm);border:1.5px dashed var(--border2);background:none;cursor:pointer;color:var(--accent);font-weight:500;margin-top:2px;font-family:var(--font);}
+.add-order-btn:active{background:var(--accent-light);}
+
+.save-dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;margin-left:6px;opacity:0;transition:opacity .3s;vertical-align:middle;}
+.save-dot.show{opacity:1;}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;z-index:100;}
+.modal{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:22px 16px 40px;width:100%;}
+.modal h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px;}
+.modal input{width:100%;font-size:15px;padding:11px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);margin-bottom:8px;font-family:var(--font);}
+.modal input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,109,212,.12);}
+.modal-hint{font-size:12px;margin-bottom:14px;min-height:16px;}
+.modal-btns{display:flex;gap:8px;}
+.modal-btns button{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.btn-cancel{background:var(--surface2);border:1px solid var(--border);color:var(--text2);}
+.btn-confirm{background:var(--accent);border:none;color:#fff;}
+.btn-confirm:disabled{opacity:.4;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:500;display:none;z-index:200;white-space:nowrap;font-family:var(--font);box-shadow:0 4px 16px rgba(0,0,0,.2);}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="screen active" id="screen-list">
+    <div class="topbar">
+      <div class="topbar-title">OEE Coleta <span class="save-dot" id="save-dot"></span></div>
+      <input type="date" id="data-input"/>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="prog-label">0 de 20 máquinas preenchidas</span>
+        <span id="prog-pct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-lbl">Concluídas</div><div class="stat-val accent" id="stat-done">0</div></div>
+      <div class="stat-card"><div class="stat-lbl">Pendentes</div><div class="stat-val" id="stat-pend">0</div></div>
+      <div class="stat-card"><div class="stat-lbl">Caixas</div><div class="stat-val" id="stat-boxes">0</div></div>
+    </div>
+    <div class="list-scroll" id="machine-list"></div>
+    <div class="export-bar">
+      <button class="export-btn" id="btn-export" onclick="exportFile()" disabled>Exportar Excel</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-detail">
+    <div class="detail-topbar">
+      <button class="back-btn" onclick="goBack()">‹</button>
+      <div class="machine-title" id="detail-title">M_220</div>
+      <button class="remove-btn" onclick="confirmDeleteMachine()">Remover</button>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="detail-scroll" id="detail-body"></div>
+  </div>
+
+  <div class="modal-bg" id="modal-add" style="display:none;">
+    <div class="modal">
+      <h3>Adicionar máquina</h3>
+      <input type="text" id="new-machine-input" placeholder="Ex: M_305" oninput="validateNewMachine(this)"/>
+      <div id="new-machine-hint" class="modal-hint"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-confirm" id="btn-add-confirm" onclick="addMachine()" disabled>Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const WO_FORMAT='"26/00"0000"/ODP"';
+const STORAGE_KEY='oee_state_v1';
+let machines=['M_220','M_214','M_217','M_179','M_159','M_212','M_173','M_149','M_178','M_170','M_172','M_069','M_176','M_188','M_192','M_105','M_108','M_138','M_008','M_002'];
+let db={};
+let currentMachine=null;
+let saveTimer=null;
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({machines,db,date:document.getElementById('data-input').value}));
+    const dot=document.getElementById('save-dot');
+    dot.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>dot.classList.remove('show'),1400);
+  }catch(e){}
+}
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return false;
+    const s=JSON.parse(raw);
+    machines=s.machines||machines;
+    db=s.db||{};
+    if(s.date)document.getElementById('data-input').value=s.date;
+    return true;
+  }catch(e){return false;}
+}
+
+function woPreview(val){
+  const n=parseInt(val);
+  if(!val||isNaN(n)||n<=0)return'';
+  return'26/00'+String(n).padStart(4,'0')+'/ODP';
+}
+
+function getM(m){
+  if(!db[m])db[m]={t1:[{wo:'',cx:''}],t2:[{wo:'',cx:''}],op1:'',op2:''};
+  return db[m];
+}
+
+function hasData(m,t){
+  const d=db[m];if(!d)return false;
+  const orders=t===1?d.t1:d.t2,op=t===1?d.op1:d.op2;
+  return!!op||orders.some(o=>o.wo||o.cx);
+}
+
+function machineIsDone(m){return hasData(m,1)||hasData(m,2);}
+
+function renderList(){
+  const el=document.getElementById('machine-list');
+  const rows=machines.map(m=>{
+    const done=machineIsDone(m);
+    const d=db[m];
+    let chips='';
+    if(d&&hasData(m,1)){const n=d.t1.filter(o=>o.wo||o.cx).length;chips+=`<span class="chip chip-t1">T1 · ${n} ordem${n>1?'s':''}</span>`;}
+    else chips+='<span class="chip chip-empty">T1 vazio</span>';
+    if(d&&hasData(m,2)){const n=d.t2.filter(o=>o.wo||o.cx).length;chips+=`<span class="chip chip-t2">T2 · ${n} ordem${n>1?'s':''}</span>`;}
+    else chips+='<span class="chip chip-empty">T2 vazio</span>';
+    return`<div class="machine-card${done?' done':''}" onclick="openMachine('${m}')">
+      <div class="machine-id">${m}</div>
+      <div class="machine-preview">${chips}</div>
+      ${done?'<div class="done-icon">✓</div>':'<div class="empty-circle"></div>'}
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div class="section-lbl">${machines.length} máquinas</div>${rows}
+    <button class="add-machine-btn" onclick="openModal()">
+      <span style="font-size:20px;line-height:1;font-weight:300;">+</span> Adicionar máquina
+    </button><div style="height:8px;"></div>`;
+  updateStats();
+}
+
+function updateStats(){
+  let done=0,boxes=0;
+  machines.forEach(m=>{
+    if(machineIsDone(m))done++;
+    const d=db[m];if(d)[...d.t1,...d.t2].forEach(o=>{if(o.cx)boxes+=parseInt(o.cx)||0;});
+  });
+  const pct=machines.length?Math.round(done/machines.length*100):0;
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-pend').textContent=machines.length-done;
+  document.getElementById('stat-boxes').textContent=boxes.toLocaleString('pt-BR');
+  document.getElementById('progress').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=`${done} de ${machines.length} máquinas preenchidas`;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('btn-export').disabled=done===0;
+}
+
+function openMachine(m){
+  currentMachine=m;
+  document.getElementById('detail-title').textContent=m;
+  renderDetail();
+  document.getElementById('screen-list').classList.remove('active');
+  document.getElementById('screen-detail').classList.add('active');
+}
+
+function goBack(){
+  document.getElementById('screen-detail').classList.remove('active');
+  document.getElementById('screen-list').classList.add('active');
+  renderList();
+}
+
+function renderDetail(){
+  const d=getM(currentMachine);
+  document.getElementById('detail-body').innerHTML=
+    renderTurnoBlock(1,d)+renderTurnoBlock(2,d)+'<div style="height:16px;"></div>';
+}
+
+function renderTurnoBlock(t,d){
+  const orders=t===1?d.t1:d.t2;
+  const op=t===1?d.op1:d.op2;
+  const total=orders.reduce((s,o)=>s+(parseInt(o.cx)||0),0);
+  const rows=orders.map((o,i)=>{
+    const preview=woPreview(o.wo);
+    return`<div>
+      <div class="order-row">
+        <input type="text" inputmode="numeric" placeholder="Nº da ordem" value="${o.wo}"
+          oninput="saveOrd(${t},${i},'wo',this)"
+          class="${o.wo?(preview?'has-val':'invalid'):''}"/>
+        <input type="number" inputmode="numeric" placeholder="Caixas" value="${o.cx}"
+          oninput="saveOrd(${t},${i},'cx',this)" min="0"
+          class="${o.cx?'has-val':''}"/>
+        <button class="del-btn" onclick="delOrd(${t},${i})" ${orders.length===1?'style="opacity:.25;pointer-events:none;"':''}>✕</button>
+      </div>
+      <div class="wo-preview${preview?' valid':''}" id="wo-prev-${t}-${i}">${preview}</div>
+    </div>`;
+  }).join('');
+  return`<div class="turno-block">
+    <div class="turno-head">
+      <span class="turno-badge ${t===1?'tb1':'tb2'}">${t===1?'T1 — 06:00':'T2 — 18:00'}</span>
+      ${total>0?`<span class="turno-cx">${total} cx</span>`:''}
+    </div>
+    <div class="format-note">Digite só o número — formato: <code>26/00XXXX/ODP</code></div>
+    <div class="op-row">
+      <span class="op-lbl">Operador</span>
+      <input type="text" placeholder="Nome do operador" value="${op}" oninput="saveOp(${t},this)" class="${op?'has-val':''}"/>
+    </div>
+    <div class="orders-area">
+      <div class="col-hint"><span>Nº ordem</span><span style="text-align:center;">Caixas</span><span></span></div>
+      ${rows}
+      <button class="add-order-btn" onclick="addOrd(${t})">+ adicionar ordem</button>
+    </div>
+  </div>`;
+}
+
+function saveOrd(t,i,f,el){
+  const d=getM(currentMachine);
+  const orders=t===1?d.t1:d.t2;
+  orders[i][f]=el.value;
+  el.classList.remove('has-val','invalid');
+  if(f==='wo'){
+    const preview=woPreview(el.value);
+    const prevEl=document.getElementById(`wo-prev-${t}-${i}`);
+    if(el.value){
+      if(preview){el.classList.add('has-val');if(prevEl){prevEl.textContent=preview;prevEl.className='wo-preview valid';}}
+      else{el.classList.add('invalid');if(prevEl){prevEl.textContent='número inválido';prevEl.className='wo-preview';}}
+    }else{if(prevEl){prevEl.textContent='';prevEl.className='wo-preview';}}
+  }else{if(el.value)el.classList.add('has-val');}
+  refreshTurnoHead(t,d);
+  saveState();
+}
+
+function saveOp(t,el){
+  const d=getM(currentMachine);
+  if(t===1)d.op1=el.value;else d.op2=el.value;
+  el.classList.toggle('has-val',!!el.value);
+  saveState();
+}
+
+function addOrd(t){
+  const d=getM(currentMachine);
+  if(t===1)d.t1.push({wo:'',cx:''});else d.t2.push({wo:'',cx:''});
+  renderDetail();saveState();
+}
+
+function delOrd(t,i){
+  const d=getM(currentMachine);
+  const orders=t===1?d.t1:d.t2;
+  if(orders.length===1)return;
+  orders.splice(i,1);
+  renderDetail();saveState();
+}
+
+function refreshTurnoHead(t,d){
+  const orders=t===1?d.t1:d.t2;
+  const total=orders.reduce((s,o)=>s+(parseInt(o.cx)||0),0);
+  const heads=document.querySelectorAll('.turno-head');
+  if(heads[t-1]){
+    let span=heads[t-1].querySelector('.turno-cx');
+    if(total>0){
+      if(!span){span=document.createElement('span');span.className='turno-cx';heads[t-1].appendChild(span);}
+      span.textContent=`${total} cx`;
+    }else if(span)span.textContent='';
+  }
+}
+
+function confirmDeleteMachine(){
+  if(machines.length<=1){alert('Precisa ter pelo menos 1 máquina.');return;}
+  if(confirm(`Remover ${currentMachine} permanentemente?`)){
+    machines=machines.filter(m=>m!==currentMachine);
+    delete db[currentMachine];
+    goBack();saveState();
+  }
+}
+
+function openModal(){
+  document.getElementById('modal-add').style.display='flex';
+  document.getElementById('new-machine-input').value='';
+  document.getElementById('new-machine-hint').textContent='';
+  document.getElementById('btn-add-confirm').disabled=true;
+  setTimeout(()=>document.getElementById('new-machine-input').focus(),100);
+}
+function closeModal(){document.getElementById('modal-add').style.display='none';}
+
+function validateNewMachine(el){
+  const v=el.value.trim().toUpperCase();
+  const hint=document.getElementById('new-machine-hint');
+  const btn=document.getElementById('btn-add-confirm');
+  if(!v){hint.textContent='';btn.disabled=true;return;}
+  if(machines.includes(v)){hint.textContent='Essa máquina já existe.';hint.style.color='var(--danger)';btn.disabled=true;return;}
+  hint.textContent='ID disponível';hint.style.color='var(--success)';btn.disabled=false;
+}
+
+function addMachine(){
+  const v=document.getElementById('new-machine-input').value.trim().toUpperCase();
+  if(!v||machines.includes(v))return;
+  machines.push(v);
+  closeModal();renderList();saveState();
+  setTimeout(()=>openMachine(v),100);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+function exportFile(){
+  const dateVal=document.getElementById('data-input').value;
+  const [y,mo,d]=dateVal.split('-');
+  const wb=XLSX.utils.book_new();
+  const wsData=[['INIZIO','RESOURCE_ID','WORKORDER_BASE_ID','CAIXAS','Employee']];
+  machines.forEach(m=>{
+    [1,2].forEach(t=>{
+      const hour=t===1?'06.00.00':'18.00.00';
+      const inizio=`${d}/${mo}/${y} ${hour}`;
+      const dd=db[m];
+      if(!dd){wsData.push([inizio,m,'','','']);return;}
+      const orders=t===1?dd.t1:dd.t2;
+      const op=t===1?dd.op1:dd.op2;
+      orders.forEach(o=>{
+        wsData.push([inizio,m,o.wo?parseInt(o.wo):'',o.cx?parseFloat(o.cx):'',op||'']);
+      });
+    });
+  });
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=1;R<=range.e.r;R++){
+    const woCell=ws[XLSX.utils.encode_cell({r:R,c:2})];
+    if(woCell&&woCell.v!==''){woCell.t='n';woCell.z=WO_FORMAT;}
+    const cxCell=ws[XLSX.utils.encode_cell({r:R,c:3})];
+    if(cxCell&&cxCell.v!==''){cxCell.t='n';cxCell.z='0.00';}
+  }
+  XLSX.utils.book_append_sheet(wb,ws,'OEE');
+  XLSX.writeFile(wb,`OEE_${y}${mo}${d}.xlsx`);
+  showToast('Arquivo exportado com sucesso');
+}
+
+if(!loadState()){
+  const today=new Date();
+  document.getElementById('data-input').value=today.toISOString().split('T')[0];
+}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+document.getElementById('data-input').addEventListener('change',saveState);
+renderList();
+</script>
+</body>
+</html>
+
       --surface: #ffffff;
       --accent-blue: #1a6fd4;
       --accent-blue-light: #e8f0fe;
